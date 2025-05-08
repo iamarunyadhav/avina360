@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>3D Image Rotator</title>
+</head>
+<body>
+  <h2>Upload Images + Customize Options</h2>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" name="images" id="images" multiple />
+    <br><br>
+
+    <label>Rotation Axis:</label>
+    <select id="axis">
+      <option value="x">X-axis</option>
+      <option value="y">Y-axis</option>
+      <option value="z">Z-axis</option>
+    </select>
+    <br><br>
+
+    <label>Background:</label>
+    <select id="bg">
+      <option value="black">Black</option>
+      <option value="transparent">Transparent</option>
+    </select>
+    <br><br>
+
+    <label>Duration (sec):</label>
+    <input type="range" min="1" max="10" value="5" id="duration" />
+    <span id="durationValue">5s</span>
+    <br><br>
+
+    <label>Watermark Text:</label>
+    <input type="text" id="watermark" placeholder="MyBrand" />
+    <br><br>
+
+    <label>Export as GIF?</label>
+    <input type="checkbox" id="gifExport" />
+    <br><br>
+
+    <button type="submit">Upload & Generate</button>
+  </form>
+
+  <ul id="downloadLinks"></ul>
+
+  <script>
+    const form = document.getElementById('uploadForm');
+    const durationInput = document.getElementById('duration');
+    const durationDisplay = document.getElementById('durationValue');
+    const linksList = document.getElementById('downloadLinks');
+
+    durationInput.addEventListener('input', () => {
+      durationDisplay.textContent = `${durationInput.value}s`;
+    });
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+
+      linksList.innerHTML = '⏳ Processing...';
+
+      const files = document.getElementById('images').files;
+      const axis = document.getElementById('axis').value;
+      const bg = document.getElementById('bg').value;
+      const duration = document.getElementById('duration').value;
+      const watermark = document.getElementById('watermark').value || 'MyBrand';
+      const gif = document.getElementById('gifExport').checked;
+
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('axis', axis);
+        formData.append('bg', bg);
+        formData.append('duration', duration);
+        formData.append('watermark', watermark);
+        formData.append('gif', gif);
+
+        const res = await fetch('/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const li = document.createElement('li');
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = file.name.replace(/\..+$/, '') + (gif ? '.gif' : '.mp4');
+          a.textContent = `⬇ Download: ${a.download}`;
+          li.appendChild(a);
+          linksList.appendChild(li);
+        } else {
+          const li = document.createElement('li');
+          li.textContent = `❌ Failed: ${file.name}`;
+          linksList.appendChild(li);
+        }
+      }
+    };
+  </script>
+</body>
+</html>
